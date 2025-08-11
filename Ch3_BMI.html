@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ศูนย์รวมการบ้าน + โปรแกรมซองงบประมาณ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Smooth show/hide */
+    .fade-enter { opacity: 0; transform: translateY(6px); }
+    .fade-enter-active { opacity: 1; transform: translateY(0); transition: all .2s; }
+    .fade-leave { opacity: 1; transform: translateY(0); }
+    .fade-leave-active { opacity: 0; transform: translateY(6px); transition: all .2s; }
+
+    /* Simple tooltip */
+    .tip:hover::after { content: attr(data-tip); position: absolute; white-space: nowrap; background:#111827; color:#fff; padding:.25rem .5rem; border-radius:.375rem; transform: translateY(-120%); font-size:.75rem; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-50 text-gray-800">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-indigo-700">ศูนย์รวมการบ้าน (Homework Hub)</h1>
+        <p class="text-gray-600">รวมลิงก์งานทั้งหมด + โปรแกรมที่พัฒนาเอง (ด้านการเงิน)</p>
+      </div>
+      <nav class="bg-white/70 backdrop-blur border border-indigo-100 shadow-sm rounded-2xl p-1 flex gap-1">
+        <button id="tabHub" class="tab active px-4 py-2 rounded-xl text-sm font-medium text-indigo-700 bg-indigo-100">หน้า Hub</button>
+        <button id="tabApp" class="tab px-4 py-2 rounded-xl text-sm font-medium text-indigo-700 hover:bg-indigo-50">โปรแกรมซองงบประมาณ</button>
+      </nav>
+    </header>
+
+    <!-- Panels -->
+    <main>
+      <!-- HUB PANEL -->
+      <section id="panelHub" class="fade-enter-active">
+        <div class="grid md:grid-cols-5 gap-6">
+          <!-- Add form -->
+          <div class="md:col-span-2">
+            <div class="bg-white rounded-2xl shadow p-5 border border-gray-100">
+              <h2 class="text-xl font-semibold mb-3">เพิ่มการบ้าน/งาน</h2>
+              <form id="hwForm" class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium">ชื่อเรื่อง</label>
+                  <input id="hwTitle" required class="w-full mt-1 px-3 py-2 rounded-xl border focus:ring-2 focus:ring-indigo-200" placeholder="เช่น บทที่ 4 รายงานวิจัย"/>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium">รายละเอียด</label>
+                  <textarea id="hwDesc" rows="3" class="w-full mt-1 px-3 py-2 rounded-xl border focus:ring-2 focus:ring-indigo-200" placeholder="สรุป/เงื่อนไข/สิ่งที่ต้องส่ง"></textarea>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium">ลิงก์</label>
+                    <input id="hwLink" type="url" class="w-full mt-1 px-3 py-2 rounded-xl border focus:ring-2 focus:ring-indigo-200" placeholder="https://..."/>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium">กำหนดส่ง</label>
+                    <input id="hwDue" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border focus:ring-2 focus:ring-indigo-200"/>
+                  </div>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium">วิชา</label>
+                    <input id="hwCourse" class="w-full mt-1 px-3 py-2 rounded-xl border focus:ring-2 focus:ring-indigo-200" placeholder="เช่น Thai for Communication"/>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium">สถานะ</label>
+                    <select id="hwStatus" class="w-full mt-1 px-3 py-2 rounded-xl border focus:ring-2 focus:ring-indigo-200">
+                      <option value="todo">ยังไม่เริ่ม</option>
+                      <option value="doing">กำลังทำ</option>
+                      <option value="done">เสร็จแล้ว</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="flex gap-2 pt-2">
+                  <button class="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700">บันทึก</button>
+                  <button type="button" id="exportHub" class="px-4 py-2 rounded-xl border">ส่งออก JSON</button>
+                  <label class="px-4 py-2 rounded-xl border cursor-pointer relative overflow-hidden">
+                    นำเข้า JSON<input id="importHub" type="file" accept="application/json" class="absolute inset-0 opacity-0 cursor-pointer"/>
+                  </label>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- List -->
+          <div class="md:col-span-3">
+            <div class="bg-white rounded-2xl shadow p-5 border border-gray-100">
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <h2 class="text-xl font-semibold">รายการการบ้าน</h2>
+                <div class="flex gap-2">
+                  <input id="searchHw" placeholder="ค้นหา..." class="px-3 py-2 rounded-xl border" />
+                  <select id="filterHw" class="px-3 py-2 rounded-xl border">
+                    <option value="all">ทั้งหมด</option>
+                    <option value="todo">ยังไม่เริ่ม</option>
+                    <option value="doing">กำลังทำ</option>
+                    <option value="done">เสร็จแล้ว</option>
+                  </select>
+                </div>
+              </div>
+              <ul id="hwList" class="space-y-3"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- APP PANEL: SMART BUDGET ENVELOPES -->
+      <section id="panelApp" class="hidden">
+        <div class="bg-white rounded-2xl shadow p-6 border border-gray-100">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+            <h2 class="text-2xl font-semibold text-emerald-700">โปรแกรมซองงบประมาณ (Smart Budget Envelopes)</h2>
+            <div class="flex gap-2">
+              <button id="resetApp" class="px-3 py-2 rounded-xl border">รีเซ็ตข้อมูล</button>
+              <button id="exportApp" class="px-3 py-2 rounded-xl border">ส่งออก JSON</button>
+              <label class="px-3 py-2 rounded-xl border cursor-pointer relative overflow-hidden">นำเข้า JSON<input id="importApp" type="file" accept="application/json" class="absolute inset-0 opacity-0 cursor-pointer"/></label>
+            </div>
+          </div>
+
+          <!-- Create envelope/category -->
+          <div class="grid md:grid-cols-3 gap-5 mb-6">
+            <div class="md:col-span-1 bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4">
+              <h3 class="font-semibold mb-2">เพิ่มซองงบประมาณ</h3>
+              <form id="catForm" class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium">ชื่อซอง</label>
+                  <input id="catName" class="w-full mt-1 px-3 py-2 rounded-xl border" placeholder="เช่น อาหาร, เดินทาง, ความงาม"/>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium">งบต่อเดือน (บาท)</label>
+                  <input id="catLimit" type="number" min="0" step="1" class="w-full mt-1 px-3 py-2 rounded-xl border" placeholder="เช่น 3000"/>
+                </div>
+                <button class="bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700">เพิ่มซอง</button>
+              </form>
+            </div>
+
+            <div class="md:col-span-2">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="font-semibold">ซองทั้งหมด</h3>
+                <div class="text-sm text-gray-600">เดือน: <span id="monthLabel"></span></div>
+              </div>
+              <ul id="catList" class="grid sm:grid-cols-2 gap-4"></ul>
+            </div>
+          </div>
+
+          <!-- Add transaction -->
+          <div class="grid md:grid-cols-3 gap-5">
+            <div class="md:col-span-1 bg-amber-50/60 border border-amber-100 rounded-2xl p-4">
+              <h3 class="font-semibold mb-2">บันทึกรายการใช้จ่าย</h3>
+              <form id="txForm" class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium">ซอง</label>
+                  <select id="txCat" class="w-full mt-1 px-3 py-2 rounded-xl border"></select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium">จำนวนเงิน (บาท)</label>
+                  <input id="txAmount" type="number" min="0" step="1" class="w-full mt-1 px-3 py-2 rounded-xl border" placeholder="เช่น 120"/>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium">วันที่</label>
+                  <input id="txDate" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border"/>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium">บันทึก/หมายเหตุ</label>
+                  <input id="txNote" class="w-full mt-1 px-3 py-2 rounded-xl border" placeholder="เช่น กาแฟ, สกินแคร์ ฯลฯ"/>
+                </div>
+                <button class="bg-amber-600 text-white px-4 py-2 rounded-xl hover:bg-amber-700">บันทึกรายการ</button>
+              </form>
+            </div>
+
+            <div class="md:col-span-2">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="font-semibold">รายการล่าสุด</h3>
+                <div class="flex items-center gap-2 text-sm">
+                  <label>ค้นหา</label>
+                  <input id="searchTx" class="px-3 py-1.5 rounded-xl border" placeholder="พิมพ์คำที่ต้องการ..." />
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm border">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-3 py-2 border">วันที่</th>
+                      <th class="px-3 py-2 border">ซอง</th>
+                      <th class="px-3 py-2 border">จำนวน (฿)</th>
+                      <th class="px-3 py-2 border">บันทึก</th>
+                      <th class="px-3 py-2 border">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="txTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Insights -->
+          <div class="grid md:grid-cols-3 gap-5 mt-6">
+            <div class="bg-white rounded-2xl border p-4">
+              <h4 class="font-semibold mb-2">สรุปทั้งเดือน</h4>
+              <div class="text-sm space-y-1">
+                <div>งบรวม: <span id="sumBudget" class="font-medium"></span> ฿</div>
+                <div>ใช้ไป: <span id="sumSpent" class="font-medium"></span> ฿</div>
+                <div>เหลือ: <span id="sumLeft" class="font-medium"></span> ฿</div>
+              </div>
+            </div>
+            <div class="md:col-span-2 bg-white rounded-2xl border p-4">
+              <h4 class="font-semibold mb-3">คำแนะนำอัตโนมัติ</h4>
+              <ul id="adviceList" class="list-disc pl-6 text-sm space-y-1"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mt-10 text-center text-xs text-gray-500">CS030 นภาวรรณ ศรีศักดา</footer>
+  </div>
+
+  <script>
+    /* ------------------------------ Utilities ------------------------------ */
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+    const fmt = (n) => (n||0).toLocaleString('th-TH');
+
+    /* ------------------------------ Tabs ------------------------------ */
+    const panelHub = $('#panelHub');
+    const panelApp = $('#panelApp');
+    const tabHub = $('#tabHub');
+    const tabApp = $('#tabApp');
+    const switchTab = (name) => {
+      if (name === 'hub') {
+        panelHub.classList.remove('hidden');
+        panelApp.classList.add('hidden');
+        tabHub.classList.add('bg-indigo-100','active');
+        tabApp.classList.remove('bg-indigo-100','active');
+      } else {
+        panelApp.classList.remove('hidden');
+        panelHub.classList.add('hidden');
+        tabApp.classList.add('bg-indigo-100','active');
+        tabHub.classList.remove('bg-indigo-100','active');
+      }
+    };
+    tabHub.addEventListener('click', () => switchTab('hub'));
+    tabApp.addEventListener('click', () => switchTab('app'));
+
+    /* ------------------------------ Homework Hub ------------------------------ */
+    const HUB_KEY = 'hw_items_v1';
+    const hwForm = $('#hwForm');
+    const hwList = $('#hwList');
+    const searchHw = $('#searchHw');
+    const filterHw = $('#filterHw');
+    const exportHub = $('#exportHub');
+    const importHub = $('#importHub');
+
+    let hwItems = JSON.parse(localStorage.getItem(HUB_KEY) || '[]');
+
+    function saveHub(){ localStorage.setItem(HUB_KEY, JSON.stringify(hwItems)); }
+
+    function renderHub(){
+      const q = (searchHw.value||'').toLowerCase();
+      const f = filterHw.value;
+      hwList.innerHTML = '';
+      const sorted = [...hwItems].sort((a,b)=>{
+        const da = a.due||''; const db = b.due||'';
+        return (da===db) ? a.title.localeCompare(b.title) : (da<db? -1: 1);
+      });
+      for (const item of sorted){
+        if (f!=='all' && item.status!==f) continue;
+        const text = `${item.title} ${item.desc} ${item.course}`.toLowerCase();
+        if (q && !text.includes(q)) continue;
+        const li = document.createElement('li');
+        li.className = 'border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3';
+        li.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 text-xs rounded-lg ${badgeColor(item.status)}">${statusText(item.status)}</span>
+              <h4 class="font-semibold truncate">${escapeHtml(item.title)}</h4>
+            </div>
+            <p class="text-sm text-gray-600 mt-1 line-clamp-2">${escapeHtml(item.desc||'')}</p>
+            <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
+              ${item.course? `<span class="bg-gray-100 px-2 py-0.5 rounded">${escapeHtml(item.course)}</span>`:''}
+              ${item.due? `<span class="">กำหนดส่ง: ${item.due}</span>`:''}
+              ${item.link? `<a class="text-indigo-600 underline" href="${escapeAttr(item.link)}" target="_blank">ลิงก์งาน</a>`:''}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="px-3 py-1.5 rounded-xl border" data-act="toggle">สลับสถานะ</button>
+            <button class="px-3 py-1.5 rounded-xl border" data-act="edit">แก้ไข</button>
+            <button class="px-3 py-1.5 rounded-xl border text-rose-600" data-act="del">ลบ</button>
+          </div>`;
+        li.querySelector('[data-act="toggle"]').onclick = ()=>{
+          const order = ['todo','doing','done'];
+          const idx = order.indexOf(item.status);
+          item.status = order[(idx+1)%order.length];
+          saveHub(); renderHub();
+        };
+        li.querySelector('[data-act="edit"]').onclick = ()=>{
+          const t = prompt('แก้ไขชื่อเรื่อง', item.title); if (t===null) return; item.title = t.trim();
+          const d = prompt('แก้ไขรายละเอียด', item.desc||''); if (d===null) return; item.desc = d.trim();
+          const l = prompt('แก้ไขลิงก์', item.link||''); if (l===null) return; item.link = l.trim();
+          const due = prompt('แก้ไขกำหนดส่ง (YYYY-MM-DD)', item.due||''); if (due===null) return; item.due = due.trim();
+          const c = prompt('แก้ไขวิชา', item.course||''); if (c===null) return; item.course = c.trim();
+          saveHub(); renderHub();
+        };
+        li.querySelector('[data-act="del"]').onclick = ()=>{
+          if (confirm('ลบรายการนี้?')){ hwItems = hwItems.filter(x=>x.id!==item.id); saveHub(); renderHub(); }
+        };
+        hwList.appendChild(li);
+      }
+    }
+
+    function statusText(s){ return s==='todo'?'ยังไม่เริ่ม': s==='doing'?'กำลังทำ':'เสร็จแล้ว'; }
+    function badgeColor(s){
+      return s==='todo'?'bg-gray-100 text-gray-700': s==='doing'?'bg-amber-100 text-amber-700':'bg-emerald-100 text-emerald-700';
+    }
+    function escapeHtml(s=''){ return s.replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch])); }
+    function escapeAttr(s=''){ return s.replace(/"/g,'&quot;'); }
+
+    hwForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const data = {
+        id: crypto.randomUUID(),
+        title: $('#hwTitle').value.trim(),
+        desc: $('#hwDesc').value.trim(),
+        link: $('#hwLink').value.trim(),
+        due: $('#hwDue').value || '',
+        course: $('#hwCourse').value.trim(),
+        status: $('#hwStatus').value
+      };
+      if(!data.title){ alert('กรอกชื่อเรื่องก่อนนะ'); return; }
+      hwItems.push(data); saveHub(); hwForm.reset(); renderHub();
+    });
+    searchHw.addEventListener('input', renderHub);
+    filterHw.addEventListener('change', renderHub);
+
+    exportHub.addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(hwItems, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'homework_hub.json';
+      a.click();
+    });
+    importHub.addEventListener('change', async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      try{ const txt = await file.text(); const arr = JSON.parse(txt); if(Array.isArray(arr)){ hwItems = arr; saveHub(); renderHub(); }
+        else alert('ไฟล์ไม่ถูกต้อง');
+      }catch(err){ alert('นำเข้าไม่สำเร็จ'); }
+      e.target.value = '';
+    });
+
+    /* ------------------------------ Budget App ------------------------------ */
+    const APP_KEY = 'envelopes_v1';
+    const monthLabel = $('#monthLabel');
+    const catForm = $('#catForm');
+    const catList = $('#catList');
+    const txForm = $('#txForm');
+    const txCat = $('#txCat');
+    const txTable = $('#txTable');
+    const searchTx = $('#searchTx');
+    const resetApp = $('#resetApp');
+    const exportApp = $('#exportApp');
+    const importApp = $('#importApp');
+    const sumBudget = $('#sumBudget');
+    const sumSpent = $('#sumSpent');
+    const sumLeft = $('#sumLeft');
+    const adviceList = $('#adviceList');
+
+    let app = JSON.parse(localStorage.getItem(APP_KEY) || '{}');
+    if(!app.categories) app = { categories: [], tx: [], month: new Date().toISOString().slice(0,7) };
+
+    function saveApp(){ localStorage.setItem(APP_KEY, JSON.stringify(app)); }
+
+    function setDefaultDate(){
+      const today = new Date().toISOString().slice(0,10);
+      $('#txDate').value = today;
+    }
+
+    function renderMonth(){
+      monthLabel.textContent = app.month;
+    }
+
+    function renderCats(){
+      // options in select
+      txCat.innerHTML = app.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+      // cards
+      catList.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      for(const c of app.categories){
+        const spent = app.tx.filter(t=>t.categoryId===c.id).reduce((s,t)=>s+Number(t.amount||0),0);
+        const left = Math.max(0, (Number(c.limit)||0) - spent);
+        const pct = (Number(c.limit)||0) ? Math.min(100, Math.round(spent*100/Number(c.limit))) : 0;
+        const warn = pct>=100 ? 'text-rose-600' : pct>=80 ? 'text-amber-600' : 'text-emerald-700';
+        const el = document.createElement('li');
+        el.className = 'border rounded-2xl p-4 flex flex-col gap-2';
+        el.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="font-semibold">${escapeHtml(c.name)}</h4>
+            <div class="text-xs text-gray-500">งบ: ฿${fmt(c.limit)}</div>
+          </div>
+          <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden"><div class="h-2 bg-emerald-500" style="width:${pct}%;"></div></div>
+          <div class="text-sm ${warn}">ใช้ไป ฿${fmt(spent)} | เหลือ ฿${fmt(left)} (${pct}%)</div>
+          <div class="flex gap-2">
+            <button data-act="edit" class="px-3 py-1.5 rounded-xl border">แก้ไข</button>
+            <button data-act="del" class="px-3 py-1.5 rounded-xl border text-rose-600">ลบ</button>
+          </div>`;
+        el.querySelector('[data-act="edit"]').onclick = ()=>{
+          const n = prompt('ชื่อซอง', c.name); if(n===null) return; c.name = n.trim()||c.name;
+          const lim = prompt('งบต่อเดือน (บาท)', c.limit); if(lim===null) return; c.limit = Math.max(0, Number(lim)||0);
+          saveApp(); renderAll();
+        };
+        el.querySelector('[data-act="del"]').onclick = ()=>{
+          if(confirm('ลบซองนี้? (ข้อมูลรายการในซองจะยังอยู่)')){
+            app.categories = app.categories.filter(x=>x.id!==c.id);
+            saveApp(); renderAll();
+          }
+        };
+        frag.appendChild(el);
+      }
+      catList.appendChild(frag);
+    }
+
+    function renderTx(){
+      const q = (searchTx.value||'').toLowerCase();
+      txTable.innerHTML = '';
+      const rows = app.tx
+        .slice()
+        .sort((a,b)=> a.date===b.date ? b.createdAt - a.createdAt : (a.date<b.date?1:-1));
+      for(const t of rows){
+        const cat = app.categories.find(c=>c.id===t.categoryId);
+        const text = `${t.date} ${t.note} ${cat?cat.name:''}`.toLowerCase();
+        if(q && !text.includes(q)) continue;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2 border whitespace-nowrap">${t.date}</td>
+          <td class="px-3 py-2 border">${escapeHtml(cat?cat.name:'-')}</td>
+          <td class="px-3 py-2 border text-right">${fmt(t.amount)}</td>
+          <td class="px-3 py-2 border">${escapeHtml(t.note||'')}</td>
+          <td class="px-3 py-2 border text-center">
+            <button class="px-2 py-1 border rounded-lg text-xs" data-act="edit">แก้ไข</button>
+            <button class="px-2 py-1 border rounded-lg text-xs text-rose-600" data-act="del">ลบ</button>
+          </td>`;
+        tr.querySelector('[data-act="edit"]').onclick = ()=>{
+          const amt = prompt('จำนวนเงิน', t.amount); if(amt===null) return; t.amount = Math.max(0, Number(amt)||0);
+          const date = prompt('วันที่ (YYYY-MM-DD)', t.date); if(date===null) return; t.date = date || t.date;
+          const note = prompt('หมายเหตุ', t.note||''); if(note===null) return; t.note = note;
+          const options = app.categories.map(c=>c.name).join(', ');
+          const newCat = prompt('ชื่อซอง (มี: '+options+')', (app.categories.find(c=>c.id===t.categoryId)||{}).name || '');
+          if(newCat!==null){ const found = app.categories.find(c=>c.name===newCat.trim()); if(found) t.categoryId = found.id; }
+          saveApp(); renderAll();
+        };
+        tr.querySelector('[data-act="del"]').onclick = ()=>{
+          if(confirm('ลบรายการนี้?')){
+            app.tx = app.tx.filter(x=>x.id!==t.id); saveApp(); renderAll();
+          }
+        };
+        txTable.appendChild(tr);
+      }
+    }
+
+    function renderSummary(){
+      const budget = app.categories.reduce((s,c)=>s+Number(c.limit||0),0);
+      const spent = app.tx.reduce((s,t)=>s+Number(t.amount||0),0);
+      const left = Math.max(0, budget - spent);
+      sumBudget.textContent = fmt(budget);
+      sumSpent.textContent = fmt(spent);
+      sumLeft.textContent = fmt(left);
+
+      // Advice rules
+      const adv = [];
+      const over = app.categories.filter(c=>{
+        const spentC = app.tx.filter(t=>t.categoryId===c.id).reduce((s,t)=>s+Number(t.amount||0),0);
+        return spentC > c.limit; });
+      if(over.length) adv.push(`ซอง ${over.map(c=>c.name).join(' , ')} ใช้เกินงบ แนะนำหยุดใช้ชั่วคราว 3–5 วันหรือย้ายงบจากซองอื่น`);
+      const near = app.categories.filter(c=>{
+        const spentC = app.tx.filter(t=>t.categoryId===c.id).reduce((s,t)=>s+Number(t.amount||0),0);
+        return c.limit>0 && spentC/c.limit >= 0.8 && spentC<=c.limit; });
+      if(near.length) adv.push(`ซอง ${near.map(c=>c.name).join(' , ')} ใกล้เต็ม 80% ลองตั้งเพดานรายสัปดาห์ย่อย`);
+      if(app.tx.length>=5){
+        const avg = Math.round(app.tx.reduce((s,t)=>s+Number(t.amount||0),0)/app.tx.length);
+        adv.push(`ค่าใช้จ่ายเฉลี่ยต่อรายการ ≈ ฿${fmt(avg)} พิจารณาตั้งเกณฑ์เตือนเมื่อรายการเกินจำนวนนี้`);
+      }
+      if(!app.categories.length) adv.push('ยังไม่มีซองงบประมาณ เริ่มจากซองหลัก 3–4 ซอง เช่น อาหาร เดินทาง ค่าเทอม/ค่าเช่าที่พัก');
+      if(!app.tx.length && app.categories.length) adv.push('ยังไม่มีรายการใช้จ่าย ลองบันทึกรายการแรกเพื่อดูแถบสถานะซอง');
+      adviceList.innerHTML = adv.map(a=>`<li>${escapeHtml(a)}</li>`).join('') || '<li>ยังไม่มีคำแนะนำ</li>';
+    }
+
+    function renderAll(){ renderMonth(); renderCats(); renderTx(); renderSummary(); }
+
+    // Forms
+    catForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const name = $('#catName').value.trim();
+      const limit = Math.max(0, Number($('#catLimit').value)||0);
+      if(!name){ alert('กรุณาตั้งชื่อซอง'); return; }
+      app.categories.push({ id: crypto.randomUUID(), name, limit });
+      saveApp(); catForm.reset(); renderAll();
+    });
+
+    txForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      if(!app.categories.length){ alert('กรุณาสร้างซองก่อน'); return; }
+      const categoryId = $('#txCat').value;
+      const amount = Math.max(0, Number($('#txAmount').value)||0);
+      const date = $('#txDate').value || new Date().toISOString().slice(0,10);
+      const note = $('#txNote').value.trim();
+      if(!amount){ alert('จำนวนเงินต้องมากกว่า 0'); return; }
+      app.tx.push({ id: crypto.randomUUID(), categoryId, amount, date, note, createdAt: Date.now() });
+      saveApp(); txForm.reset(); setDefaultDate(); renderAll();
+    });
+
+    // Export/Import app
+    exportApp.addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(app, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='budget_envelopes.json'; a.click();
+    });
+    importApp.addEventListener('change', async (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      try{ const txt = await f.text(); const obj = JSON.parse(txt); if(obj && obj.categories && obj.tx){ app = obj; saveApp(); renderAll(); } else alert('ไฟล์ไม่ถูกต้อง'); }
+      catch{ alert('นำเข้าไม่สำเร็จ'); }
+      e.target.value='';
+    });
+
+    resetApp.addEventListener('click', ()=>{
+      if(confirm('ล้างข้อมูลทั้งหมดของโปรแกรมซองงบประมาณ?')){ app = { categories: [], tx: [], month: new Date().toISOString().slice(0,7) }; saveApp(); renderAll(); }
+    });
+
+    // Init
+    (function init(){
+      renderHub();
+      setDefaultDate();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
